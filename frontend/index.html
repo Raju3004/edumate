@@ -638,20 +638,29 @@
     if (demo) demo.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
   });
 
-  var navUser = document.getElementById('nav-user');
+    var navUser = document.getElementById('nav-user');
   var navLoginBtn = document.getElementById('nav-login');
   var navSignupBtn = document.getElementById('nav-signup');
+  var heroSignupBtn = document.getElementById('hero-signup-btn');
+  var finalSignupBtn = document.getElementById('final-signup-btn');
+  var finalLoginBtn = document.getElementById('final-login-btn');
   function setLoggedOutUI(){
     navUser.style.display = 'none';
     navLoginBtn.textContent = 'Log in';
     navSignupBtn.style.display = 'inline-block';
     navLoginBtn.onclick = function(){ openModal('login'); };
+    heroSignupBtn.style.display = 'inline-block';
+    finalSignupBtn.style.display = 'inline-block';
+    finalLoginBtn.style.display = 'inline-block';
   }
   function setLoggedIn(name){
     navUser.textContent = 'Hi, ' + name;
     navUser.style.display = 'inline';
     navLoginBtn.textContent = 'Log out';
     navSignupBtn.style.display = 'none';
+    heroSignupBtn.style.display = 'none';
+    finalSignupBtn.style.display = 'none';
+    finalLoginBtn.style.display = 'none';
     navLoginBtn.onclick = async function(){
       try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (err) {}
       setLoggedOutUI();
@@ -769,12 +778,10 @@
     addTyping();
 
     try {
-      var response = await fetch('https://api.anthropic.com/v1/messages', {
+            var response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
           system: SYSTEM_PROMPT,
           messages: conversation
         })
