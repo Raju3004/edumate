@@ -435,9 +435,15 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- SUPABASE ---------- */
+  var SUPABASE_URL = 'https://acbdsqhvsozgsrqorhgv.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_COvZqYtGWeDQuIdHO0UN_Q_sYm9g_8g';
+  var supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   /* ---------- THREE.JS BACKGROUND: adaptive knowledge graph ---------- */
   (function initScene(){
@@ -635,33 +641,60 @@
   var navUser = document.getElementById('nav-user');
   var navLoginBtn = document.getElementById('nav-login');
   var navSignupBtn = document.getElementById('nav-signup');
+  function setLoggedOutUI(){
+    navUser.style.display = 'none';
+    navLoginBtn.textContent = 'Log in';
+    navSignupBtn.style.display = 'inline-block';
+    navLoginBtn.onclick = function(){ openModal('login'); };
+  }
   function setLoggedIn(name){
     navUser.textContent = 'Hi, ' + name;
     navUser.style.display = 'inline';
     navLoginBtn.textContent = 'Log out';
     navSignupBtn.style.display = 'none';
-    navLoginBtn.onclick = function(){
-      navUser.style.display = 'none';
-      navLoginBtn.textContent = 'Log in';
-      navSignupBtn.style.display = 'inline-block';
-      navLoginBtn.onclick = function(){ openModal('login'); };
+    navLoginBtn.onclick = async function(){
+      try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (err) {}
+      setLoggedOutUI();
       showToast('Logged out');
     };
   }
 
-  function storageOk(){ return window.storage && typeof window.storage.set === 'function'; }
+  function displayNameFor(user){
+    return (user && user.user_metadata && user.user_metadata.display_name) || (user && user.email) || 'there';
+  }
+
+  // Stay logged in across refreshes if a session already exists.
+  (async function restoreSession(){
+    if (!supabaseClient) return;
+    try {
+      var res = await supabaseClient.auth.getSession();
+      var session = res && res.data && res.data.session;
+      if (session && session.user) setLoggedIn(displayNameFor(session.user));
+    } catch (err) {}
+  })();
 
   document.getElementById('signup-submit').addEventListener('click', async function(){
     var name = document.getElementById('signup-name').value.trim();
     var email = document.getElementById('signup-email').value.trim();
-    if (!name || !email) { showToast('Add a name and email to continue'); return; }
+    var password = document.getElementById('signup-password').value;
+    if (!name || !email || !password) { showToast('Fill in your name, email, and password'); return; }
+    if (password.length < 6) { showToast('Password needs to be at least 6 characters'); return; }
+    if (!supabaseClient) { showToast('Auth is not configured right now'); return; }
     try {
-      if (storageOk()) {
-        await window.storage.set('user:' + email.toLowerCase(), JSON.stringify({ name: name, email: email }), false);
+      var res = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: { data: { display_name: name } }
+      });
+      if (res.error) { showToast(res.error.message); return; }
+      if (res.data.session) {
+        showToast('Account created — welcome, ' + name);
+        setLoggedIn(name);
+        closeModal();
+      } else {
+        showToast('Check your email to confirm your account, then log in.');
+        setTab('login');
       }
-      showToast('Account created — welcome, ' + name);
-      setLoggedIn(name);
-      closeModal();
     } catch (err) {
       showToast('Could not create account — try again');
     }
@@ -669,20 +702,18 @@
 
   document.getElementById('login-submit').addEventListener('click', async function(){
     var email = document.getElementById('login-email').value.trim();
-    if (!email) { showToast('Enter your email to continue'); return; }
+    var password = document.getElementById('login-password').value;
+    if (!email || !password) { showToast('Enter your email and password'); return; }
+    if (!supabaseClient) { showToast('Auth is not configured right now'); return; }
     try {
-      if (!storageOk()) { showToast('No account found — try signing up'); return; }
-      var res = await window.storage.get('user:' + email.toLowerCase(), false);
-      if (res && res.value) {
-        var u = JSON.parse(res.value);
-        showToast('Welcome back, ' + u.name);
-        setLoggedIn(u.name);
-        closeModal();
-      } else {
-        showToast('No account found — try signing up');
-      }
+      var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+      if (res.error) { showToast(res.error.message); return; }
+      var name = displayNameFor(res.data.user);
+      showToast('Welcome back, ' + name);
+      setLoggedIn(name);
+      closeModal();
     } catch (err) {
-      showToast('No account found — try signing up');
+      showToast('Login failed — check your email and password');
     }
   });
 
