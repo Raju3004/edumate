@@ -1,3 +1,17 @@
+async function callGemini(system, contents) {
+  return fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=' + process.env.GEMINI_API_KEY,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: contents
+      })
+    }
+  );
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -12,18 +26,14 @@ module.exports = async function handler(req, res) {
       };
     });
 
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=' + process.env.GEMINI_API_KEY,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: system }] },
-          contents: contents
-        })
-      }
-    );
-    const data = await response.json();
+    var response = await callGemini(system, contents);
+    var data = await response.json();
+
+    if (!response.ok && data && data.error && /demand|overloaded|unavailable/i.test(data.error.message || '')) {
+      await new Promise(function(r){ setTimeout(r, 1500); });
+      response = await callGemini(system, contents);
+      data = await response.json();
+    }
 
     if (!response.ok) {
       var errMsg = (data && data.error && data.error.message) || ('Gemini request failed with status ' + response.status);
