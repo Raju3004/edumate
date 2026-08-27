@@ -33,6 +33,10 @@ module.exports = async function handler(req, res) {
     var q = '/learning_profiles?user_id=eq.' + user.id + '&subject=eq.' + encodeURIComponent(SUBJECT) + '&topic=eq.' + encodeURIComponent(TOPIC) + '&select=*';
     var profRes = await sbFetch(q, token);
     var profRows = await profRes.json();
+    if (!profRes.ok) {
+      res.status(500).json({ error: 'Could not look up profile: ' + (profRows && profRows.message ? profRows.message : JSON.stringify(profRows)) });
+      return;
+    }
     var profile = Array.isArray(profRows) && profRows[0] ? profRows[0] : null;
 
     if (!profile) {
@@ -42,7 +46,15 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify({ user_id: user.id, subject: SUBJECT, topic: TOPIC })
       });
       var created = await createRes.json();
+      if (!createRes.ok) {
+        res.status(500).json({ error: 'Could not create learning profile: ' + (created && created.message ? created.message : JSON.stringify(created)) });
+        return;
+      }
       profile = Array.isArray(created) ? created[0] : created;
+      if (!profile || !profile.id) {
+        res.status(500).json({ error: 'Profile creation returned no row: ' + JSON.stringify(created) });
+        return;
+      }
     }
 
     var sessRes = await sbFetch('/tutor_sessions', token, {
@@ -51,6 +63,10 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({ user_id: user.id, subject: SUBJECT, topic: TOPIC })
     });
     var sessRows = await sessRes.json();
+    if (!sessRes.ok) {
+      res.status(500).json({ error: 'Could not create tutor session: ' + (sessRows && sessRows.message ? sessRows.message : JSON.stringify(sessRows)) });
+      return;
+    }
     var session = Array.isArray(sessRows) ? sessRows[0] : sessRows;
 
     res.status(200).json({
