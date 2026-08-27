@@ -200,8 +200,12 @@
       if (res.ok && data.level) {
         currentLevel = data.level;
         levelBadge.textContent = 'Level ' + currentLevel + ' of 5';
+        return { ok: true, level: data.level };
       }
-    } catch (err) {}
+      return { ok: false, error: data.error || ('Status ' + res.status) };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   }
 
   function renderQuiz(){
@@ -221,19 +225,24 @@
       var btn = document.createElement('button');
       btn.className = 'quiz-option';
       btn.textContent = opt;
-      btn.addEventListener('click', function(){
+      btn.addEventListener('click', async function(){
         var all = optWrap.querySelectorAll('.quiz-option');
         all.forEach(function(b){ b.disabled = true; });
         var correct = idx === QUIZ.correct;
         if (correct) {
           btn.classList.add('correct');
-          addMessage('tutor', "Real understanding, not a guess. Leveling you up.");
         } else {
           btn.classList.add('incorrect');
           optWrap.children[QUIZ.correct].classList.add('correct');
+        }
+        var result = await submitQuiz(correct);
+        if (!result.ok) {
+          addMessage('tutor', '[Debug] Level not saved: ' + result.error, true);
+        } else if (correct) {
+          addMessage('tutor', "Real understanding, not a guess. Leveling you up to Level " + result.level + ".");
+        } else {
           addMessage('tutor', "Not quite — staying at this level a bit longer.");
         }
-        submitQuiz(correct);
       });
       optWrap.appendChild(btn);
     });

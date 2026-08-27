@@ -1,5 +1,7 @@
 ﻿var SUPABASE_URL = 'https://acbdsqhvsozgsrqorhgv.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_COvZqYtGWeDQuIdHO0UN_Q_sYm9g_8g';
+var SUBJECT = 'Computer Science';
+var TOPIC = 'Recursion';
 
 async function getUser(token) {
   var res = await fetch(SUPABASE_URL + '/auth/v1/user', {
@@ -31,32 +33,40 @@ module.exports = async function handler(req, res) {
     var body = req.body || {};
     var correct = !!body.correct;
 
-    var q = '/learning_profiles?user_id=eq.' + user.id + '&subject=eq.Computer Science&topic=eq.Recursion&select=*';
+    var q = '/learning_profiles?user_id=eq.' + user.id + '&subject=eq.' + encodeURIComponent(SUBJECT) + '&topic=eq.' + encodeURIComponent(TOPIC) + '&select=*';
     var profRes = await sbFetch(q, token);
     var profRows = await profRes.json();
     var profile = Array.isArray(profRows) && profRows[0] ? profRows[0] : null;
-    if (!profile) { res.status(404).json({ error: 'No profile found' }); return; }
+    if (!profile) { res.status(404).json({ error: 'No profile found for this user/subject/topic' }); return; }
 
     var newLevel = profile.understanding_level;
     if (correct && newLevel < 5) newLevel += 1;
 
-    await sbFetch('/learning_profiles?id=eq.' + profile.id, token, {
+    var patchRes = await sbFetch('/learning_profiles?id=eq.' + profile.id, token, {
       method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
       body: JSON.stringify({ understanding_level: newLevel, updated_at: new Date().toISOString() })
     });
+    var patchRows = await patchRes.json();
+    var updated = Array.isArray(patchRows) && patchRows[0] ? patchRows[0] : null;
+
+    if (!updated) {
+      res.status(500).json({ error: 'Update did not affect any row (RLS or id mismatch)' });
+      return;
+    }
 
     await sbFetch('/progress_events', token, {
       method: 'POST',
       body: JSON.stringify({
         user_id: user.id,
-        subject: 'Computer Science',
-        topic: 'Recursion',
+        subject: SUBJECT,
+        topic: TOPIC,
         event_type: 'level_check',
         detail: { correct: correct, new_level: newLevel }
       })
     });
 
-    res.status(200).json({ level: newLevel });
+    res.status(200).json({ level: updated.understanding_level });
   } catch (err) {
     res.status(500).json({ error: 'Server error: ' + (err && err.message) });
   }

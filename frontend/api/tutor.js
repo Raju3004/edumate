@@ -1,5 +1,7 @@
 ﻿var SUPABASE_URL = 'https://acbdsqhvsozgsrqorhgv.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_COvZqYtGWeDQuIdHO0UN_Q_sYm9g_8g';
+var SUBJECT = 'Computer Science';
+var TOPIC = 'Recursion';
 
 async function getUser(token) {
   var res = await fetch(SUPABASE_URL + '/auth/v1/user', {
@@ -48,7 +50,7 @@ module.exports = async function handler(req, res) {
     var message = body.message;
     if (!message) { res.status(400).json({ reply: '[Debug] No message provided' }); return; }
 
-    var q = '/learning_profiles?user_id=eq.' + user.id + '&subject=eq.Computer Science&topic=eq.Recursion&select=*';
+    var q = '/learning_profiles?user_id=eq.' + user.id + '&subject=eq.' + encodeURIComponent(SUBJECT) + '&topic=eq.' + encodeURIComponent(TOPIC) + '&select=*';
     var profRes = await sbFetch(q, token);
     var profRows = await profRes.json();
     var profile = Array.isArray(profRows) && profRows[0] ? profRows[0] : { understanding_level: 1, confidence: 0.5, pace: 'steady' };
