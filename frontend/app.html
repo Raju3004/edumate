@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduMate — Your Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #0a0e17; --panel: #121826; --panel-2: #1a2233; --paper: #f4efe4;
+    --muted: #8b93a6; --brass: #c9a227; --signal: #5fe1c9; --line: rgba(244,239,228,0.1);
+    --serif: 'Fraunces', serif; --sans: 'Inter', sans-serif; --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--ink); color:var(--paper); font-family:var(--sans); line-height:1.5;}
+  button{font-family:inherit; cursor:pointer;}
+  :focus-visible{outline:2px solid var(--signal); outline-offset:3px;}
+
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.1rem 1.75rem; border-bottom:1px solid var(--line);
+  }
+  .logo{font-family:var(--serif); font-weight:500; font-size:1.25rem;}
+  .logo .dot{color:var(--brass);}
+  .btn{font-size:0.88rem; font-weight:600; padding:0.55rem 1.1rem; border-radius:7px; border:1px solid var(--line); background:transparent; color:var(--paper);}
+  .btn:hover{border-color:var(--brass);}
+
+  main{max-width:760px; margin:0 auto; padding:2.5rem 1.5rem 4rem;}
+  .top-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.7rem;}
+  h1{font-family:var(--serif); font-weight:500; font-size:1.7rem;}
+  .subject-line{font-family:var(--mono); font-size:0.78rem; color:var(--muted); margin-top:0.3rem;}
+  .level-badge{font-family:var(--mono); font-size:0.78rem; color:var(--brass); border:1px solid rgba(201,162,39,0.35); padding:0.3rem 0.8rem; border-radius:20px;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+  .chat-body{min-height:340px; max-height:520px; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:1.1rem;}
+  .msg{max-width:88%; font-size:0.95rem; line-height:1.6;}
+  .msg .who{font-family:var(--mono); font-size:0.68rem; color:var(--muted); margin-bottom:0.3rem; text-transform:uppercase;}
+  .msg.student{align-self:flex-end; text-align:right;}
+  .msg.student .bubble{background:var(--panel-2); padding:0.7rem 1rem; border-radius:10px 10px 2px 10px; display:inline-block; text-align:left;}
+  .msg.tutor .bubble{border-left:2px solid var(--brass); padding-left:0.9rem;}
+  .msg.tutor.error .bubble{border-left-color:#c9605a; color:var(--muted);}
+
+  .quiz-options{display:flex; flex-direction:column; gap:0.5rem; margin-top:0.9rem; max-width:420px;}
+  .quiz-option{text-align:left; padding:0.6rem 0.9rem; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--paper); font-size:0.88rem;}
+  .quiz-option:hover:not([disabled]){border-color:var(--signal);}
+  .quiz-option.correct{border-color:var(--signal); background:rgba(95,225,201,0.12);}
+  .quiz-option.incorrect{border-color:#c9605a; background:rgba(201,96,90,0.1);}
+
+  .action-row{display:flex; flex-wrap:wrap; gap:0.6rem; padding:0 1.3rem 1rem;}
+  .action-btn{display:none; font-size:0.85rem; padding:0.5rem 0.9rem; border-radius:7px; border:1px solid rgba(95,225,201,0.4); background:transparent; color:var(--signal);}
+  .action-btn.show{display:inline-block;}
+
+  .input-row{display:flex; gap:0.6rem; padding:1rem 1.3rem; border-top:1px solid var(--line);}
+  .input-row input{flex:1; background:var(--ink); border:1px solid var(--line); border-radius:8px; padding:0.7rem 0.9rem; color:var(--paper); font-family:var(--sans); font-size:0.92rem;}
+  .input-row input:focus{border-color:var(--brass); outline:none;}
+  .btn-solid{background:var(--brass); color:#20180a; border:none;}
+
+  .gate{max-width:420px; margin:6rem auto; text-align:center;}
+  .gate p{color:var(--muted); margin-top:0.8rem;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">EduMate<span class="dot">·</span></div>
+  <button class="btn" id="logout-btn" style="display:none;">Log out</button>
+</nav>
+
+<div class="gate" id="gate">
+  <h1 style="font-family:var(--serif); font-size:1.5rem;">You need to be signed in</h1>
+  <p>This is your actual tutor session — log in or create an account from the landing page first.</p>
+  <p style="margin-top:1.5rem;"><a href="index.html" style="color:var(--signal);">← Back to EduMate</a></p>
+</div>
+
+<main id="app" style="display:none;">
+  <div class="top-row">
+    <div>
+      <h1 id="greeting">Welcome</h1>
+      <div class="subject-line" id="subject-line">Computer Science — Recursion</div>
+    </div>
+    <div class="level-badge" id="level-badge">Level 1 of 5</div>
+  </div>
+
+  <div class="panel">
+    <div class="chat-body" id="chat-body">
+      <div class="msg tutor"><div class="who">EduMate</div><div class="bubble">Loading your session…</div></div>
+    </div>
+    <div class="action-row">
+      <button class="action-btn" id="retry-btn">I still don't get it →</button>
+      <button class="action-btn" id="quiz-btn">Take level-up quiz →</button>
+    </div>
+    <div class="input-row">
+      <input type="text" id="chat-input" placeholder="Ask about recursion…" autocomplete="off">
+      <button class="btn btn-solid" id="send-btn">Send</button>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  var SUPABASE_URL = 'https://acbdsqhvsozgsrqorhgv.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_COvZqYtGWeDQuIdHO0UN_Q_sYm9g_8g';
+  var supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  var gate = document.getElementById('gate');
+  var app = document.getElementById('app');
+  var logoutBtn = document.getElementById('logout-btn');
+  var greeting = document.getElementById('greeting');
+  var levelBadge = document.getElementById('level-badge');
+  var chatBody = document.getElementById('chat-body');
+  var chatInput = document.getElementById('chat-input');
+  var sendBtn = document.getElementById('send-btn');
+  var retryBtn = document.getElementById('retry-btn');
+  var quizBtn = document.getElementById('quiz-btn');
+
+  var accessToken = null;
+  var sessionId = null;
+  var currentLevel = 1;
+
+  var QUIZ = {
+    q: 'Which of these is required for a recursive function to actually terminate?',
+    options: ['A for loop', 'A base case', 'A global variable', 'Multiple return statements'],
+    correct: 1
+  };
+
+  function addMessage(role, text, isError){
+    var wrap = document.createElement('div');
+    wrap.className = 'msg ' + role + (isError ? ' error' : '');
+    var who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = role === 'student' ? 'You' : 'EduMate';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(who);
+    wrap.appendChild(bubble);
+    chatBody.appendChild(wrap);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  function clearChat(){
+    chatBody.innerHTML = '';
+  }
+
+  async function loadSession(){
+    try {
+      var res = await fetch('/api/session', {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      var data = await res.json();
+      if (!res.ok) { addMessage('tutor', '[Debug] ' + (data.error || 'Could not load session'), true); return; }
+
+      sessionId = data.session_id;
+      currentLevel = (data.profile && data.profile.understanding_level) || 1;
+      levelBadge.textContent = 'Level ' + currentLevel + ' of 5';
+      greeting.textContent = data.name ? ('Welcome back, ' + data.name) : 'Welcome back';
+
+      clearChat();
+      addMessage('tutor', 'Ask me anything about recursion — I remember where you left off, level ' + currentLevel + '.');
+    } catch (err) {
+      addMessage('tutor', '[Debug] ' + err.message, true);
+    }
+  }
+
+  async function sendMessage(text){
+    if (!text || !text.trim()) return;
+    retryBtn.classList.remove('show');
+    quizBtn.classList.remove('show');
+    addMessage('student', text);
+    chatInput.value = '';
+    sendBtn.disabled = true;
+
+    try {
+      var res = await fetch('/api/tutor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+        body: JSON.stringify({ session_id: sessionId, message: text })
+      });
+      var data = await res.json();
+      addMessage('tutor', data.reply || '[Debug] Empty response', !res.ok);
+      retryBtn.classList.add('show');
+      quizBtn.classList.add('show');
+    } catch (err) {
+      addMessage('tutor', '[Debug] ' + err.message, true);
+    }
+    sendBtn.disabled = false;
+  }
+
+  async function submitQuiz(correct){
+    try {
+      var res = await fetch('/api/levelup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+        body: JSON.stringify({ correct: correct })
+      });
+      var data = await res.json();
+      if (res.ok && data.level) {
+        currentLevel = data.level;
+        levelBadge.textContent = 'Level ' + currentLevel + ' of 5';
+      }
+    } catch (err) {}
+  }
+
+  function renderQuiz(){
+    var wrap = document.createElement('div');
+    wrap.className = 'msg tutor';
+    var who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = 'EduMate — Level-Up Check';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    var qText = document.createElement('div');
+    qText.textContent = QUIZ.q;
+    bubble.appendChild(qText);
+    var optWrap = document.createElement('div');
+    optWrap.className = 'quiz-options';
+    QUIZ.options.forEach(function(opt, idx){
+      var btn = document.createElement('button');
+      btn.className = 'quiz-option';
+      btn.textContent = opt;
+      btn.addEventListener('click', function(){
+        var all = optWrap.querySelectorAll('.quiz-option');
+        all.forEach(function(b){ b.disabled = true; });
+        var correct = idx === QUIZ.correct;
+        if (correct) {
+          btn.classList.add('correct');
+          addMessage('tutor', "Real understanding, not a guess. Leveling you up.");
+        } else {
+          btn.classList.add('incorrect');
+          optWrap.children[QUIZ.correct].classList.add('correct');
+          addMessage('tutor', "Not quite — staying at this level a bit longer.");
+        }
+        submitQuiz(correct);
+      });
+      optWrap.appendChild(btn);
+    });
+    bubble.appendChild(optWrap);
+    wrap.appendChild(who);
+    wrap.appendChild(bubble);
+    chatBody.appendChild(wrap);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  sendBtn.addEventListener('click', function(){ sendMessage(chatInput.value); });
+  chatInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendMessage(chatInput.value); });
+  retryBtn.addEventListener('click', function(){ sendMessage("I don't understand — can you explain that differently?"); });
+  quizBtn.addEventListener('click', function(){ quizBtn.classList.remove('show'); renderQuiz(); });
+
+  logoutBtn.addEventListener('click', async function(){
+    try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (err) {}
+    window.location.href = 'index.html';
+  });
+
+  (async function init(){
+    if (!supabaseClient) return;
+    var res = await supabaseClient.auth.getSession();
+    var session = res && res.data && res.data.session;
+    if (!session) {
+      gate.style.display = 'block';
+      app.style.display = 'none';
+      return;
+    }
+    accessToken = session.access_token;
+    gate.style.display = 'none';
+    app.style.display = 'block';
+    logoutBtn.style.display = 'inline-block';
+    loadSession();
+  })();
+})();
+</script>
+</body>
+</html>

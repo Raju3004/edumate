@@ -707,6 +707,7 @@
         showToast('Account created — welcome, ' + name);
         setLoggedIn(name);
         closeModal();
+        window.location.href = 'app.html';
       } else {
         showToast('Check your email to confirm your account, then log in.');
         setTab('login');
@@ -728,6 +729,8 @@
       showToast('Welcome back, ' + name);
       setLoggedIn(name);
       closeModal();
+      Get-ChildItem api
+Select-String -Path app.html -Pattern "app-title-check" -Quiet
     } catch (err) {
       showToast('Login failed — check your email and password');
     }
