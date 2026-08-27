@@ -1,0 +1,939 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduMate — One tutor, wholly adapted to you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #0a0e17;
+    --panel: #121826;
+    --panel-2: #1a2233;
+    --paper: #f4efe4;
+    --muted: #8b93a6;
+    --brass: #c9a227;
+    --brass-soft: rgba(201,162,39,0.14);
+    --signal: #5fe1c9;
+    --line: rgba(244,239,228,0.1);
+    --serif: 'Fraunces', serif;
+    --sans: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--sans);
+    line-height:1.5;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--brass); color:var(--ink);}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+  :focus-visible{outline:2px solid var(--signal); outline-offset:3px;}
+
+  #bg-canvas{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:0; pointer-events:none;
+  }
+
+  .wrap{max-width:1080px; margin:0 auto; padding:0 1.75rem; position:relative; z-index:1;}
+
+  /* NAV */
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.1rem 1.75rem;
+    background:rgba(10,14,23,0.72);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{
+    font-family:var(--serif); font-weight:500; font-size:1.25rem; letter-spacing:0.01em;
+    display:flex; align-items:center; gap:0.4rem;
+  }
+  .logo .dot{color:var(--brass);}
+  .nav-actions{display:flex; align-items:center; gap:0.6rem;}
+  .nav-user{font-family:var(--mono); font-size:0.82rem; color:var(--muted); margin-right:0.4rem; display:none;}
+
+  .btn{
+    font-family:var(--sans); font-size:0.88rem; font-weight:600;
+    padding:0.55rem 1.1rem; border-radius:7px; border:1px solid transparent;
+    transition:transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-ghost{background:transparent; color:var(--paper); border-color:var(--line);}
+  .btn-ghost:hover{border-color:var(--brass);}
+  .btn-solid{background:var(--brass); color:#20180a;}
+  .btn-solid:hover{background:#dcb32e;}
+  .btn-outline-signal{background:transparent; color:var(--signal); border-color:rgba(95,225,201,0.4);}
+  .btn-outline-signal:hover{border-color:var(--signal);}
+
+  /* PROGRESS RAIL */
+  .rail{
+    position:fixed; right:1.75rem; top:50%; transform:translateY(-50%);
+    z-index:40; display:flex; flex-direction:column; gap:1.1rem;
+    align-items:center;
+  }
+  .rail-dot{
+    width:9px; height:9px; border-radius:50%;
+    background:transparent; border:1px solid var(--muted);
+    cursor:pointer; transition:all 0.25s ease; position:relative;
+  }
+  .rail-dot::after{
+    content:attr(data-label); position:absolute; right:1.4rem; top:50%; transform:translateY(-50%);
+    font-family:var(--mono); font-size:0.7rem; color:var(--muted); white-space:nowrap;
+    opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+  }
+  .rail-dot:hover::after{opacity:1;}
+  .rail-dot.active{background:var(--brass); border-color:var(--brass); transform:scale(1.3);}
+  @media (max-width:900px){ .rail{display:none;} }
+
+  /* REVEAL */
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity 0.7s ease, transform 0.7s ease;}
+  .reveal.is-visible{opacity:1; transform:translateY(0);}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1; transform:none; transition:none;}
+    html{scroll-behavior:auto;}
+  }
+
+  /* SECTION SHARED */
+  .section{padding:9rem 0 7rem; position:relative;}
+  .eyebrow{
+    font-family:var(--mono); font-size:0.78rem; letter-spacing:0.08em; color:var(--brass);
+    display:flex; align-items:center; gap:0.7rem; margin-bottom:1.6rem; text-transform:uppercase;
+  }
+  .eyebrow::after{content:''; height:1px; flex:1; background:var(--line); max-width:5rem;}
+  h2{
+    font-family:var(--serif); font-weight:500; font-size:clamp(1.9rem, 4vw, 2.9rem);
+    line-height:1.15; max-width:20ch; margin-bottom:1.4rem;
+  }
+  .body-text{color:var(--muted); font-size:1.05rem; max-width:56ch; line-height:1.7;}
+
+  /* HERO */
+  .hero{
+    min-height:100vh; display:flex; flex-direction:column; justify-content:center;
+    padding-top:6rem;
+  }
+  .hero .eyebrow{margin-bottom:1.8rem;}
+  .hero h1{
+    font-family:var(--serif); font-weight:500; font-size:clamp(2.6rem, 6.4vw, 4.6rem);
+    line-height:1.08; max-width:16ch; margin-bottom:1.6rem;
+  }
+  .hero h1 em{font-style:italic; color:var(--brass); font-weight:400;}
+  .hero .body-text{font-size:1.15rem; margin-bottom:2.6rem;}
+  .hero-cta{display:flex; flex-wrap:wrap; gap:0.9rem;}
+  .hero-cta .btn{padding:0.85rem 1.6rem; font-size:0.95rem;}
+
+  /* STAT STRIP */
+  .stat-strip{
+    display:flex; gap:0; margin-top:3rem; border-top:1px solid var(--line);
+  }
+  .stat{
+    flex:1; padding:1.5rem 1.5rem 0 0; border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat .num{font-family:var(--mono); font-size:2.1rem; color:var(--brass); display:block;}
+  .stat .label{font-size:0.82rem; color:var(--muted); margin-top:0.35rem; max-width:16ch;}
+
+  /* SOLUTION THESIS */
+  .thesis{
+    text-align:center; padding:2rem 0 1rem;
+  }
+  .thesis p{
+    font-family:var(--serif); font-style:italic; font-weight:400;
+    font-size:clamp(1.6rem, 3.4vw, 2.5rem); color:var(--paper); max-width:18ch; margin:0 auto 2rem;
+    line-height:1.25;
+  }
+  .thesis .body-text{margin:0 auto; text-align:left;}
+
+  /* MODULES */
+  .module-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:1rem;
+  }
+  @media (max-width:760px){ .module-grid{grid-template-columns:1fr;} }
+  .module-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:2.2rem; transition:transform 0.1s ease, border-color 0.2s ease;
+    transform-style:preserve-3d; will-change:transform;
+  }
+  .module-card:hover{border-color:rgba(201,162,39,0.35);}
+  .module-card svg{width:28px; height:28px; stroke:var(--brass); margin-bottom:1.3rem;}
+  .module-card h3{font-family:var(--serif); font-weight:500; font-size:1.4rem; margin-bottom:0.7rem;}
+  .module-card p{color:var(--muted); font-size:0.95rem; margin-bottom:1.2rem; line-height:1.6;}
+  .module-card ul{list-style:none;}
+  .module-card li{
+    font-size:0.88rem; color:var(--paper); padding-left:1.2rem; position:relative; margin-bottom:0.55rem;
+  }
+  .module-card li::before{
+    content:'—'; position:absolute; left:0; color:var(--signal);
+  }
+
+  /* DEMO */
+  .demo-wrap{margin-top:1rem;}
+  .demo-panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    overflow:hidden; box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+  }
+  .demo-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0.85rem 1.3rem; border-bottom:1px solid var(--line); background:var(--panel-2);
+  }
+  .demo-bar-label{font-family:var(--mono); font-size:0.78rem; color:var(--muted); display:flex; align-items:center; gap:0.5rem;}
+  .pulse{width:7px; height:7px; border-radius:50%; background:var(--signal); animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  @media (prefers-reduced-motion: reduce){ .pulse{animation:none;} }
+
+  .chat-body{
+    min-height:280px; max-height:420px; overflow-y:auto; padding:1.5rem;
+    display:flex; flex-direction:column; gap:1.1rem;
+  }
+  .msg{max-width:85%; font-size:0.95rem; line-height:1.6;}
+  .msg .who{font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; color:var(--muted); margin-bottom:0.3rem; text-transform:uppercase;}
+  .msg.user{align-self:flex-end; text-align:right;}
+  .msg.user .bubble{background:var(--panel-2); padding:0.7rem 1rem; border-radius:10px 10px 2px 10px; display:inline-block; text-align:left;}
+  .msg.assistant .bubble{border-left:2px solid var(--brass); padding-left:0.9rem;}
+  .msg.assistant.error .bubble{border-left-color:#c9605a; color:var(--muted);}
+  .typing{display:flex; gap:0.3rem; padding-left:0.9rem;}
+  .typing span{width:5px; height:5px; border-radius:50%; background:var(--muted); animation:blink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:0.2s;}
+  .typing span:nth-child(3){animation-delay:0.4s;}
+  @keyframes blink{0%,80%,100%{opacity:0.2;}40%{opacity:1;}}
+
+  .chip-row{display:flex; flex-wrap:wrap; gap:0.55rem; padding:0 1.3rem 1.1rem;}
+  .chip{
+    font-size:0.82rem; padding:0.45rem 0.85rem; border-radius:20px; border:1px solid var(--line);
+    color:var(--muted); background:transparent; transition:border-color 0.15s, color 0.15s;
+  }
+  .chip:hover{border-color:var(--signal); color:var(--paper);}
+
+  .retry-row{padding:0 1.3rem 1rem;}
+  .retry-btn{display:none;}
+  .retry-btn.show{display:inline-block;}
+  .level-badge{font-family:var(--mono); font-size:0.72rem; color:var(--brass); border:1px solid rgba(201,162,39,0.35); padding:0.2rem 0.6rem; border-radius:20px; margin-right:0.7rem;}
+  .quiz-options{display:flex; flex-direction:column; gap:0.5rem; margin-top:0.9rem; max-width:420px;}
+  .quiz-option{text-align:left; padding:0.6rem 0.9rem; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--paper); font-size:0.88rem; font-family:var(--sans); transition:border-color .15s ease, background .15s ease;}
+  .quiz-option:hover:not([disabled]){border-color:var(--signal);}
+  .quiz-option.correct{border-color:var(--signal); background:rgba(95,225,201,0.12);}
+  .quiz-option.incorrect{border-color:#c9605a; background:rgba(201,96,90,0.1);}
+
+  .demo-input-row{
+    display:flex; gap:0.6rem; padding:1rem 1.3rem; border-top:1px solid var(--line);
+  }
+  .demo-input-row input{
+    flex:1; background:var(--ink); border:1px solid var(--line); border-radius:8px;
+    padding:0.7rem 0.9rem; color:var(--paper); font-family:var(--sans); font-size:0.92rem;
+  }
+  .demo-input-row input:focus{border-color:var(--brass); outline:none;}
+  .demo-note{font-family:var(--mono); font-size:0.72rem; color:var(--muted); text-align:center; margin-top:0.9rem;}
+
+  /* FINAL CTA */
+  .final-cta{text-align:center; padding:8rem 0 7rem;}
+  .final-cta h2{margin:0 auto 1.2rem; max-width:16ch;}
+  .final-cta .body-text{margin:0 auto 2.2rem; max-width:40ch;}
+  .final-cta-actions{display:flex; justify-content:center; gap:0.9rem; flex-wrap:wrap;}
+
+  footer{
+    text-align:center; padding:2.5rem 1.75rem 3rem; font-family:var(--mono); font-size:0.75rem;
+    color:var(--muted); border-top:1px solid var(--line); position:relative; z-index:1;
+  }
+
+  /* MODAL */
+  .modal-backdrop{
+    position:fixed; inset:0; z-index:100; background:rgba(10,14,23,0.75);
+    backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:1.5rem;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    width:100%; max-width:380px; padding:1.8rem; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:1rem; right:1rem; background:transparent; border:none; color:var(--muted);
+    font-size:1.2rem; line-height:1; padding:0.3rem;
+  }
+  .modal-close:hover{color:var(--paper);}
+  .tabs{display:flex; gap:0.4rem; background:var(--ink); border-radius:9px; padding:0.3rem; margin:1.4rem 0 1.4rem;}
+  .tab-btn{
+    flex:1; background:transparent; border:none; color:var(--muted); font-size:0.85rem; font-weight:600;
+    padding:0.55rem; border-radius:6px; transition:background 0.15s, color 0.15s;
+  }
+  .tab-btn.active{background:var(--panel-2); color:var(--paper);}
+  .modal h3{font-family:var(--serif); font-weight:500; font-size:1.35rem;}
+  .field{margin-bottom:0.9rem;}
+  .field label{display:block; font-size:0.78rem; color:var(--muted); margin-bottom:0.4rem;}
+  .field input{
+    width:100%; background:var(--ink); border:1px solid var(--line); border-radius:8px;
+    padding:0.65rem 0.85rem; color:var(--paper); font-family:var(--sans); font-size:0.92rem;
+  }
+  .field input:focus{border-color:var(--brass); outline:none;}
+  .modal-submit{width:100%; padding:0.75rem; margin-top:0.4rem; font-size:0.92rem;}
+  .modal-hint{font-size:0.78rem; color:var(--muted); margin-top:1rem; text-align:center;}
+  .panel-signup, .panel-login{display:none;}
+  .panel-signup.active, .panel-login.active{display:block;}
+
+  .toast{
+    position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2); border:1px solid var(--line); color:var(--paper);
+    padding:0.75rem 1.3rem; border-radius:9px; font-size:0.88rem; z-index:200;
+    opacity:0; pointer-events:none; transition:all 0.3s ease;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<nav>
+  <div class="logo">EduMate<span class="dot">·</span></div>
+  <div class="nav-actions">
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn btn-ghost" id="nav-login">Log in</button>
+    <button class="btn btn-solid" id="nav-signup">Sign up</button>
+  </div>
+</nav>
+
+<div class="rail" id="rail">
+  <div class="rail-dot" data-target="problem" data-label="Problem"></div>
+  <div class="rail-dot" data-target="solution" data-label="Solution"></div>
+  <div class="rail-dot" data-target="modules" data-label="How it works"></div>
+  <div class="rail-dot" data-target="demo" data-label="Demo"></div>
+</div>
+
+<main>
+
+  <section class="hero wrap">
+    <div class="eyebrow">Adaptive Learning Engine</div>
+    <h1>One tutor, built entirely around <em>how you think.</em></h1>
+    <p class="body-text">EduMate reads what a learner actually understands — not just which grade they're in — and adapts the explanation, the pace, and the follow-up questions in real time.</p>
+    <div class="hero-cta">
+      <button class="btn btn-solid" id="hero-demo-btn">Start the demo ↓</button>
+      <button class="btn btn-ghost" id="hero-signup-btn">Create free account</button>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="problem">
+    <div class="eyebrow">01 — The Problem</div>
+    <h2>Every classroom is taught to an average student who doesn't exist.</h2>
+    <p class="body-text">One instructor, thirty or forty learners, one fixed pace. The learner who's ahead disengages. The one who's behind stays quiet rather than ask again. Neither gets what they actually need — and no instructor can be in forty places at once.</p>
+    <div class="stat-strip">
+      <div class="stat"><span class="num">1</span><span class="label">instructor in the room</span></div>
+      <div class="stat"><span class="num">40</span><span class="label">different paces in that room</span></div>
+      <div class="stat"><span class="num">1</span><span class="label">tutor that adapts to each one</span></div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="solution">
+    <div class="eyebrow">02 — The Fix</div>
+    <div class="thesis">
+      <p>"One tutor. Wholly adapted to you."</p>
+    </div>
+    <p class="body-text">EduMate doesn't hand every learner the same explanation. It builds a working model of what one specific person understands, then teaches to that — adjusting depth, examples, and pace as it learns more.</p>
+  </section>
+
+  <section class="section wrap reveal" id="modules">
+    <div class="eyebrow">03 — How It Works</div>
+    <h2>Two things, done properly.</h2>
+    <div class="module-grid">
+      <div class="module-card" data-tilt>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><circle cx="5" cy="6" r="1.6"></circle><circle cx="19" cy="6" r="1.6"></circle><circle cx="5" cy="18" r="1.6"></circle><circle cx="19" cy="18" r="1.6"></circle><path d="M9.8 10.2 6.3 7.3M14.2 10.2l3.5-2.9M9.8 13.8l-3.5 2.9M14.2 13.8l3.5 2.9"></path></svg>
+        <h3>Learning Profile</h3>
+        <p>EduMate figures out what a learner actually understands — not just what they got right.</p>
+        <ul>
+          <li>Reads for understanding, not just correct answers</li>
+          <li>Distinguishes a real explanation from a lucky guess</li>
+          <li>Tracks pace and gaps over time, not just scores</li>
+        </ul>
+      </div>
+      <div class="module-card" data-tilt>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.2-7.5-9.7A4.3 4.3 0 0 1 9 6.5c1.2 0 2.3.5 3 1.4.7-.9 1.8-1.4 3-1.4a4.3 4.3 0 0 1 4.5 4.3c0 5.5-7.5 9.7-7.5 9.7z"></path></svg>
+        <h3>Tutor Relationship</h3>
+        <p>The tutor a learner can actually push back on.</p>
+        <ul>
+          <li>"I don't understand" is a normal thing to say</li>
+          <li>Re-explains differently, not just louder</li>
+          <li>Encourages instead of grading every exchange</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap reveal" id="demo">
+    <div class="eyebrow">04 — See It Work</div>
+    <h2>Ask it something real. Then tell it you're lost.</h2>
+    <p class="body-text" style="margin-bottom:2rem;">This isn't a mockup — it's EduMate's tutoring model, live.</p>
+    <div class="demo-wrap">
+      <div class="demo-panel">
+        <div class="demo-bar">
+          <div class="demo-bar-label"><span class="pulse"></span> EduMate — live</div>
+          <div class="demo-bar-label"><span class="level-badge" id="level-badge">Level 1</span><span id="demo-status">ready</span></div>
+        </div>
+        <div class="chat-body" id="chat-body">
+          <div class="msg assistant">
+            <div class="who">EduMate</div>
+            <div class="bubble">Ask me to explain something — pick a prompt below, or type your own.</div>
+          </div>
+        </div>
+        <div class="chip-row" id="chip-row">
+          <button class="chip" data-prompt="Explain recursion, like you'd explain it to someone who's never coded.">Explain recursion</button>
+          <button class="chip" data-prompt="Why do objects fall at the same rate regardless of mass?">Why do objects fall at the same rate?</button>
+          <button class="chip" data-prompt="Derive the quadratic formula from ax² + bx + c = 0.">Derive the quadratic formula</button>
+        </div>
+        <div class="retry-row">
+          <button class="btn btn-outline-signal retry-btn" id="retry-btn">I still don't get it →</button>
+          <button class="btn btn-outline-signal retry-btn" id="quiz-btn" style="margin-left:0.6rem;">Take level-up quiz →</button>
+        </div>
+        <div class="demo-input-row">
+          <input type="text" id="chat-input" placeholder="Ask EduMate something…" autocomplete="off">
+          <button class="btn btn-solid" id="chat-send">Send</button>
+        </div>
+      </div>
+      <p class="demo-note">Live model — responses may take a few seconds.</p>
+    </div>
+  </section>
+
+  <section class="final-cta wrap reveal">
+    <h2>Learning shouldn't be one-size-fits-all.</h2>
+    <p class="body-text">Because no student should feel like they're learning alone.</p>
+    <div class="final-cta-actions">
+      <button class="btn btn-solid" id="final-signup-btn">Create free account</button>
+      <button class="btn btn-ghost" id="final-login-btn">Log in</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>EduMate — an adaptive tutor for one learner at a time.</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+    <h3 id="modal-title">Welcome to EduMate</h3>
+    <div class="tabs">
+      <button class="tab-btn" id="tab-login">Log in</button>
+      <button class="tab-btn" id="tab-signup">Sign up</button>
+    </div>
+
+    <div class="panel-login" id="panel-login">
+      <div class="field"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
+      <div class="field"><label for="login-password">Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
+      <button class="btn btn-solid modal-submit" id="login-submit">Log in</button>
+      <p class="modal-hint">Demo mode — accounts are stored locally to this session.</p>
+    </div>
+
+    <div class="panel-signup" id="panel-signup">
+      <div class="field"><label for="signup-name">Name</label><input type="text" id="signup-name" placeholder="Your name"></div>
+      <div class="field"><label for="signup-email">Email</label><input type="email" id="signup-email" placeholder="you@example.com"></div>
+      <div class="field"><label for="signup-password">Password</label><input type="password" id="signup-password" placeholder="••••••••"></div>
+      <button class="btn btn-solid modal-submit" id="signup-submit">Create account</button>
+      <p class="modal-hint">Demo mode — accounts are stored locally to this session.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- SUPABASE ---------- */
+  var SUPABASE_URL = 'https://acbdsqhvsozgsrqorhgv.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_COvZqYtGWeDQuIdHO0UN_Q_sYm9g_8g';
+  var supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  /* ---------- THREE.JS BACKGROUND: adaptive knowledge graph ---------- */
+  (function initScene(){
+    var canvas = document.getElementById('bg-canvas');
+    if (!window.THREE || !canvas) return;
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 26;
+
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    var group = new THREE.Group();
+    scene.add(group);
+
+    var NODE_COUNT = 54;
+    var positions = [];
+    for (var i = 0; i < NODE_COUNT; i++) {
+      var v = new THREE.Vector3(
+        (Math.random() - 0.5) * 34,
+        (Math.random() - 0.5) * 22,
+        (Math.random() - 0.5) * 18
+      );
+      positions.push(v);
+    }
+
+    var nodeGeo = new THREE.BufferGeometry();
+    var nodeArr = new Float32Array(NODE_COUNT * 3);
+    positions.forEach(function(p, idx){
+      nodeArr[idx*3] = p.x; nodeArr[idx*3+1] = p.y; nodeArr[idx*3+2] = p.z;
+    });
+    nodeGeo.setAttribute('position', new THREE.BufferAttribute(nodeArr, 3));
+    var nodeMat = new THREE.PointsMaterial({ color: 0xc9a227, size: 0.42, transparent: true, opacity: 0.85, sizeAttenuation: true });
+    var points = new THREE.Points(nodeGeo, nodeMat);
+    group.add(points);
+
+    var linePairs = [];
+    var THRESH = 9.5;
+    for (var a = 0; a < positions.length; a++) {
+      for (var b = a + 1; b < positions.length; b++) {
+        if (positions[a].distanceTo(positions[b]) < THRESH) linePairs.push(positions[a], positions[b]);
+      }
+    }
+    var lineGeo = new THREE.BufferGeometry().setFromPoints(linePairs);
+    var lineMat = new THREE.LineBasicMaterial({ color: 0x5fe1c9, transparent: true, opacity: 0.16 });
+    var lines = new THREE.LineSegments(lineGeo, lineMat);
+    group.add(lines);
+
+    var mouseX = 0, mouseY = 0;
+    window.addEventListener('mousemove', function(e){
+      mouseX = (e.clientX / window.innerWidth - 0.5);
+      mouseY = (e.clientY / window.innerHeight - 0.5);
+    });
+
+    function getScrollFraction(){
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      return h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0;
+    }
+
+    function resize(){
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', resize);
+
+    var t = 0;
+    function animate(){
+      var sf = getScrollFraction();
+      t += 0.0016 + sf * 0.0022;
+      group.rotation.y = t;
+      group.rotation.x = Math.sin(t * 0.4) * 0.08 + mouseY * 0.15;
+      group.rotation.z = mouseX * 0.05;
+      var targetOpacity = 0.55 + sf * 0.35;
+      nodeMat.opacity += (targetOpacity - nodeMat.opacity) * 0.05;
+      lineMat.opacity += ((0.1 + sf * 0.28) - lineMat.opacity) * 0.05;
+      renderer.render(scene, camera);
+      if (!reduceMotion) requestAnimationFrame(animate);
+    }
+    animate();
+    if (reduceMotion) renderer.render(scene, camera);
+  })();
+
+  /* ---------- SCROLL REVEAL ---------- */
+  var revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    revealEls.forEach(function(el){ io.observe(el); });
+  } else {
+    revealEls.forEach(function(el){ el.classList.add('is-visible'); });
+  }
+
+  /* ---------- PROGRESS RAIL ---------- */
+  var railDots = document.querySelectorAll('.rail-dot');
+  railDots.forEach(function(dot){
+    dot.addEventListener('click', function(){
+      var target = document.getElementById(dot.getAttribute('data-target'));
+      if (target) target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+  });
+  var railTargets = Array.prototype.map.call(railDots, function(d){ return document.getElementById(d.getAttribute('data-target')); });
+  if ('IntersectionObserver' in window) {
+    var railIO = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        var idx = railTargets.indexOf(entry.target);
+        if (idx === -1) return;
+        if (entry.isIntersecting) {
+          railDots.forEach(function(d){ d.classList.remove('active'); });
+          railDots[idx].classList.add('active');
+        }
+      });
+    }, { threshold: 0.5 });
+    railTargets.forEach(function(el){ if (el) railIO.observe(el); });
+  }
+
+  /* ---------- CARD TILT ---------- */
+  if (!reduceMotion) {
+    document.querySelectorAll('[data-tilt]').forEach(function(card){
+      card.addEventListener('mousemove', function(e){
+        var rect = card.getBoundingClientRect();
+        var x = (e.clientX - rect.left) / rect.width - 0.5;
+        var y = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = 'perspective(700px) rotateY(' + (x * 8) + 'deg) rotateX(' + (-y * 8) + 'deg) translateZ(4px)';
+      });
+      card.addEventListener('mouseleave', function(){
+        card.style.transform = 'perspective(700px) rotateY(0) rotateX(0)';
+      });
+    });
+  }
+
+  /* ---------- TOAST ---------- */
+  var toastEl = document.getElementById('toast');
+  var toastTimer;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 3200);
+  }
+
+  /* ---------- AUTH MODAL ---------- */
+  var backdrop = document.getElementById('modal-backdrop');
+  var tabLogin = document.getElementById('tab-login');
+  var tabSignup = document.getElementById('tab-signup');
+  var panelLogin = document.getElementById('panel-login');
+  var panelSignup = document.getElementById('panel-signup');
+  var modalTitle = document.getElementById('modal-title');
+
+  function setTab(mode){
+    if (mode === 'login') {
+      tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+      panelLogin.classList.add('active'); panelSignup.classList.remove('active');
+      modalTitle.textContent = 'Welcome back';
+    } else {
+      tabSignup.classList.add('active'); tabLogin.classList.remove('active');
+      panelSignup.classList.add('active'); panelLogin.classList.remove('active');
+      modalTitle.textContent = 'Create your account';
+    }
+  }
+  function openModal(mode){
+    setTab(mode || 'login');
+    backdrop.classList.add('open');
+    setTimeout(function(){
+      var firstInput = (mode === 'signup' ? panelSignup : panelLogin).querySelector('input');
+      if (firstInput) firstInput.focus();
+    }, 50);
+  }
+  function closeModal(){ backdrop.classList.remove('open'); }
+
+  document.getElementById('nav-login').addEventListener('click', function(){ openModal('login'); });
+  document.getElementById('nav-signup').addEventListener('click', function(){ openModal('signup'); });
+  document.getElementById('hero-signup-btn').addEventListener('click', function(){ openModal('signup'); });
+  document.getElementById('final-signup-btn').addEventListener('click', function(){ openModal('signup'); });
+  document.getElementById('final-login-btn').addEventListener('click', function(){ openModal('login'); });
+  tabLogin.addEventListener('click', function(){ setTab('login'); });
+  tabSignup.addEventListener('click', function(){ setTab('signup'); });
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function(e){ if (e.target === backdrop) closeModal(); });
+  window.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeModal(); });
+
+  document.getElementById('hero-demo-btn').addEventListener('click', function(){
+    var demo = document.getElementById('demo');
+    if (demo) demo.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  });
+
+  var navUser = document.getElementById('nav-user');
+  var navLoginBtn = document.getElementById('nav-login');
+  var navSignupBtn = document.getElementById('nav-signup');
+  var heroSignupBtn = document.getElementById('hero-signup-btn');
+  var finalSignupBtn = document.getElementById('final-signup-btn');
+  var finalLoginBtn = document.getElementById('final-login-btn');
+  function setLoggedOutUI(){
+    navUser.style.display = 'none';
+    navLoginBtn.textContent = 'Log in';
+    navSignupBtn.style.display = 'inline-block';
+    navLoginBtn.onclick = function(){ openModal('login'); };
+    heroSignupBtn.style.display = 'inline-block';
+    finalSignupBtn.style.display = 'inline-block';
+    finalLoginBtn.style.display = 'inline-block';
+  }
+  function setLoggedIn(name){
+    navUser.textContent = 'Hi, ' + name;
+    navUser.style.display = 'inline';
+    navLoginBtn.textContent = 'Log out';
+    navSignupBtn.style.display = 'none';
+    heroSignupBtn.style.display = 'none';
+    finalSignupBtn.style.display = 'none';
+    finalLoginBtn.style.display = 'none';
+    navLoginBtn.onclick = async function(){
+      try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (err) {}
+      setLoggedOutUI();
+      showToast('Logged out');
+    };
+  }
+
+  function displayNameFor(user){
+    return (user && user.user_metadata && user.user_metadata.display_name) || (user && user.email) || 'there';
+  }
+
+  /* ---------- VALIDATION (same rules as Civic Tracker) ---------- */
+  var ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'rediffmail.com'];
+  function isValidName(name){
+    return /^[A-Za-z ]+$/.test(name.trim());
+  }
+  function isValidEmail(email){
+    var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!re.test(email)) return false;
+    var domain = email.split('@')[1].toLowerCase();
+    return ALLOWED_EMAIL_DOMAINS.indexOf(domain) !== -1;
+  }
+  function isValidPassword(pw){
+    return pw.length >= 6 && /[A-Za-z]/.test(pw) && /[0-9]/.test(pw);
+  }
+
+  // Stay logged in across refreshes if a session already exists.
+  (async function restoreSession(){
+    if (!supabaseClient) return;
+    try {
+      var res = await supabaseClient.auth.getSession();
+      var session = res && res.data && res.data.session;
+      if (session && session.user) setLoggedIn(displayNameFor(session.user));
+    } catch (err) {}
+  })();
+
+  document.getElementById('signup-submit').addEventListener('click', async function(){
+    var name = document.getElementById('signup-name').value.trim();
+    var email = document.getElementById('signup-email').value.trim();
+    var password = document.getElementById('signup-password').value;
+    if (!name || !email || !password) { showToast('Fill in your name, email, and password'); return; }
+    if (!isValidName(name)) { showToast('Name should contain letters only'); return; }
+    if (!isValidEmail(email)) { showToast('Use a valid email from Gmail, Yahoo, Outlook, Hotmail, iCloud, or Rediffmail'); return; }
+    if (!isValidPassword(password)) { showToast('Password needs 6+ characters with at least one letter and one number'); return; }
+    if (!supabaseClient) { showToast('Auth is not configured right now'); return; }
+    try {
+      var res = await supabaseClient.auth.signUp({
+        email: email,
+        password: password,
+        options: { data: { display_name: name } }
+      });
+      if (res.error) { showToast(res.error.message); return; }
+      if (res.data.session) {
+        showToast('Account created — welcome, ' + name);
+        setLoggedIn(name);
+        closeModal();
+        window.location.href = 'app.html';
+      } else {
+        showToast('Check your email to confirm your account, then log in.');
+        setTab('login');
+      }
+    } catch (err) {
+      showToast('Could not create account — try again');
+    }
+  });
+
+  document.getElementById('login-submit').addEventListener('click', async function(){
+    var email = document.getElementById('login-email').value.trim();
+    var password = document.getElementById('login-password').value;
+    if (!email || !password) { showToast('Enter your email and password'); return; }
+    if (!isValidEmail(email)) { showToast('Enter a valid email from a supported provider'); return; }
+    if (!supabaseClient) { showToast('Auth is not configured right now'); return; }
+    try {
+      var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+      if (res.error) { showToast(res.error.message); return; }
+      var name = displayNameFor(res.data.user);
+      showToast('Welcome back, ' + name);
+      setLoggedIn(name);
+      closeModal();
+      window.location.href = 'app.html';
+    } catch (err) {
+      showToast('Login failed — check your email and password');
+    }
+  });
+
+  /* ---------- TUTOR DEMO (live Claude API) ---------- */
+  var chatBody = document.getElementById('chat-body');
+  var chatInput = document.getElementById('chat-input');
+  var chatSend = document.getElementById('chat-send');
+  var chipRow = document.getElementById('chip-row');
+  var retryBtn = document.getElementById('retry-btn');
+  var quizBtn = document.getElementById('quiz-btn');
+  var demoStatus = document.getElementById('demo-status');
+  var levelBadge = document.getElementById('level-badge');
+  var conversation = [];
+  var currentLevel = 1;
+  var lastTopic = 'default';
+
+  var QUIZ_BANK = {
+    recursion: {
+      q: 'Which of these is required for a recursive function to actually terminate?',
+      options: ['A for loop', 'A base case', 'A global variable', 'Multiple return statements'],
+      correct: 1
+    },
+    gravity: {
+      q: "Why do a bowling ball and a feather fall at the same rate in a vacuum?",
+      options: ["They don't, really", 'Gravitational acceleration is independent of mass', 'Air resistance cancels out', 'Mass warps gravity itself'],
+      correct: 1
+    },
+    quadratic: {
+      q: 'In the quadratic formula, what does b\u00b2 \u2212 4ac actually represent?',
+      options: ['The vertex', 'The discriminant', 'The y-intercept', 'The slope'],
+      correct: 1
+    },
+    default: {
+      q: 'Which of these actually shows real understanding, not memorization?',
+      options: ['Getting the right answer', 'Explaining why the answer is correct', 'Guessing quickly', 'Copying the formula'],
+      correct: 1
+    }
+  };
+
+  function detectTopic(text){
+    text = (text || '').toLowerCase();
+    if (text.indexOf('recursio') !== -1) return 'recursion';
+    if (text.indexOf('fall') !== -1 || text.indexOf('gravity') !== -1 || text.indexOf('object') !== -1) return 'gravity';
+    if (text.indexOf('quadratic') !== -1) return 'quadratic';
+    return 'default';
+  }
+
+  var SYSTEM_PROMPT = "You are EduMate, a sharp, patient personal tutor for a live product demo. Answer the learner's question clearly and correctly, in 3-6 sentences. If the learner says they don't understand or asks for it differently, re-explain using a different angle, a concrete example, or an analogy — shorter and simpler than before, not just louder. Occasionally, after explaining a concept, ask one brief 'why' or 'what would happen if' follow-up to check real understanding rather than memorized recall — but not after every message, and not if the learner is just chatting. Keep the tone confident, warm, and intelligent — never childish or patronizing. This is a demo for a technical, adult audience.";
+
+  function addMessage(role, text, isError){
+    var wrap = document.createElement('div');
+    wrap.className = 'msg ' + role + (isError ? ' error' : '');
+    var who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = role === 'user' ? 'You' : 'EduMate';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(who);
+    wrap.appendChild(bubble);
+    chatBody.appendChild(wrap);
+    chatBody.scrollTop = chatBody.scrollHeight;
+    return wrap;
+  }
+
+  function addTyping(){
+    var wrap = document.createElement('div');
+    wrap.className = 'msg assistant';
+    wrap.id = 'typing-indicator';
+    wrap.innerHTML = '<div class="who">EduMate</div><div class="typing"><span></span><span></span><span></span></div>';
+    chatBody.appendChild(wrap);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+  function removeTyping(){
+    var el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage(text){
+    if (!text || !text.trim()) return;
+    chipRow.style.display = 'none';
+    retryBtn.classList.remove('show');
+    quizBtn.classList.remove('show');
+    addMessage('user', text);
+    conversation.push({ role: 'user', content: text });
+    lastTopic = detectTopic(text);
+    chatInput.value = '';
+    chatSend.disabled = true;
+    demoStatus.textContent = 'thinking…';
+    addTyping();
+
+    try {
+      var levelNote = ' The learner is currently at Level ' + currentLevel + ' of 3 in this demo \u2014 keep explanations appropriately deeper and more technical at higher levels, simpler and more example-driven at Level 1.';
+      var response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: SYSTEM_PROMPT + levelNote,
+          messages: conversation
+        })
+      });
+      var data = await response.json();
+      removeTyping();
+
+      var reply = '';
+      if (data && Array.isArray(data.content)) {
+        reply = data.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('\n');
+      }
+      if (!reply) reply = "I couldn't quite form an answer there — try asking again.";
+
+      conversation.push({ role: 'assistant', content: reply });
+      addMessage('assistant', reply);
+      retryBtn.classList.add('show');
+      quizBtn.classList.add('show');
+      demoStatus.textContent = 'ready';
+    } catch (err) {
+      removeTyping();
+      addMessage('assistant', "The connection to the tutor hiccuped. Try sending that again.", true);
+      demoStatus.textContent = 'ready';
+    }
+    chatSend.disabled = false;
+  }
+
+  chatSend.addEventListener('click', function(){ sendMessage(chatInput.value); });
+  chatInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') sendMessage(chatInput.value);
+  });
+  chipRow.querySelectorAll('.chip').forEach(function(chip){
+    chip.addEventListener('click', function(){ sendMessage(chip.getAttribute('data-prompt')); });
+  });
+  retryBtn.addEventListener('click', function(){
+    sendMessage("I don't understand — can you explain that differently?");
+  });
+
+  quizBtn.addEventListener('click', function(){
+    quizBtn.classList.remove('show');
+    renderQuiz(QUIZ_BANK[lastTopic] || QUIZ_BANK.default);
+  });
+
+  function renderQuiz(quiz){
+    var wrap = document.createElement('div');
+    wrap.className = 'msg assistant';
+    var who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = 'EduMate \u2014 Level-Up Check';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    var qText = document.createElement('div');
+    qText.textContent = quiz.q;
+    bubble.appendChild(qText);
+    var optWrap = document.createElement('div');
+    optWrap.className = 'quiz-options';
+    quiz.options.forEach(function(opt, idx){
+      var btn = document.createElement('button');
+      btn.className = 'quiz-option';
+      btn.textContent = opt;
+      btn.addEventListener('click', function(){
+        var allBtns = optWrap.querySelectorAll('.quiz-option');
+        allBtns.forEach(function(b){ b.disabled = true; });
+        if (idx === quiz.correct) {
+          btn.classList.add('correct');
+          levelUp();
+        } else {
+          btn.classList.add('incorrect');
+          optWrap.children[quiz.correct].classList.add('correct');
+          addMessage('assistant', "Not quite \u2014 but that's exactly what this check is for. Let's stay at this level a bit longer and keep building it up.");
+        }
+      });
+      optWrap.appendChild(btn);
+    });
+    bubble.appendChild(optWrap);
+    wrap.appendChild(who);
+    wrap.appendChild(bubble);
+    chatBody.appendChild(wrap);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  function levelUp(){
+    if (currentLevel < 3) currentLevel += 1;
+    levelBadge.textContent = 'Level ' + currentLevel;
+    addMessage('assistant', "Nice \u2014 that's real understanding, not a guess. Bumping you to Level " + currentLevel + ". Explanations will go a bit deeper from here.");
+  }
+
+})();
+</script>
+</body>
+</html>
