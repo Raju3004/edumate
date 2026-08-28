@@ -713,6 +713,11 @@
     if (!isValidEmail(email)) { showToast('Use a valid email from Gmail, Yahoo, Outlook, Hotmail, iCloud, or Rediffmail'); return; }
     if (!isValidPassword(password)) { showToast('Password needs 6+ characters with at least one letter and one number'); return; }
     if (!supabaseClient) { showToast('Auth is not configured right now'); return; }
+    var btn = this;
+    if (btn.disabled) return;
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Creating account…';
     try {
       var res = await supabaseClient.auth.signUp({
         email: email,
@@ -731,6 +736,9 @@
       }
     } catch (err) {
       showToast('Could not create account — try again');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   });
 
@@ -740,6 +748,11 @@
     if (!email || !password) { showToast('Enter your email and password'); return; }
     if (!isValidEmail(email)) { showToast('Enter a valid email from a supported provider'); return; }
     if (!supabaseClient) { showToast('Auth is not configured right now'); return; }
+    var btn = this;
+    if (btn.disabled) return;
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Logging in…';
     try {
       var res = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
       if (res.error) { showToast(res.error.message); return; }
@@ -750,6 +763,9 @@
       window.location.href = 'app.html';
     } catch (err) {
       showToast('Login failed — check your email and password');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   });
 
